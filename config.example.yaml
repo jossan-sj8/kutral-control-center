@@ -1,0 +1,107 @@
+# ============================================================================
+# Kutral Control Center — EXAMPLE configuration
+# ============================================================================
+# This file is the template: copy it to `config.yaml` and fill in the values of your
+# installation (directory, internal networks, mail).
+#
+#     cp config.example.yaml config.yaml
+#
+# The addresses here (192.0.2.x, 198.51.100.x, 203.0.113.x and the ejemplo.cl domain)
+# are documentation addresses: they point at no real network.
+
+environment: prod
+
+ldap:
+  # Single master of the directory (verified: no replication, no contextCSN)
+  server: "ldap://192.0.2.154"
+  base_dn: "ou=People,<SUFIJO_DEL_DIRECTORIO>"     # users
+  group_dn: "ou=Group,<SUFIJO_DEL_DIRECTORIO>"     # POSIX groups
+  root_dn: "<SUFIJO_DEL_DIRECTORIO>"
+  manager_dn: "<CUENTA_ADMINISTRADORA>,<SUFIJO_DEL_DIRECTORIO>"
+  # The Manager password is NOT stored on disk: not here, not in a separate file,
+  # under no permissions. It lives only in the session environment
+  # (KUTRAL_LDAP_PASSWORD) or in the memory of the process while it is typed at the
+  # prompt. `password_file` is empty on purpose, as policy.
+  password_file: ""
+  password_env: "KUTRAL_LDAP_PASSWORD"
+  timeout: 10
+
+paths:
+  # Only if the inherited scripts are kept as hooks
+  scripts_dir: "../scripts/AddUsers"
+  beegfs_home: "/mnt/beegfs/home"
+  beegfs_labs: "/mnt/beegfs/labs"
+  # Each user's bash history (used by /etc/profile.d/history.sh). Creation makes the
+  # folder with the right owner; if it was left over from a deleted account, it fixes it.
+  beegfs_history: "/mnt/beegfs/backup/history"
+  logs_dir: "logs"
+  # Outside the deployed folder, on purpose: here live the roll-back LDIF of every entry
+  # and the Slurm associations backed up before removing them. Inside the repository, a
+  # redeployment (rm -rf + scp -r) would take them away, and with them the only copy of
+  # which labs each suspended account belonged to.
+  backups_dir: "/root/kutral-backups"
+  tutorial_pdf: "docs/Tutorial_basico_uso_cluster.pdf"
+  # Only used with smtp.transport: file (offline rehearsal and tests)
+  mail_dir: "outbox"
+
+smtp:
+  # Verified: the current flow sends with `msmtp` (add_users.sh)
+  transport: msmtp          # msmtp | smtp | file
+  sender: "hpc@ejemplo.cl"
+  server: "localhost"
+  port: 25
+
+cluster:
+  name: "Kutral HPC"
+  login_host: "198.51.100.104"
+  web_url: "https://kutral-hpc.ejemplo.cl/"
+  wiki_url: "https://kutral-hpc.ejemplo.cl/mediawiki"
+  default_shell: "/bin/bash"
+  nologin_shell: "/sbin/nologin"
+  # Floor of the gid allocation (it is nobody's group: 9000 is the gid of lab-07)
+  gid_start: 9000
+  uid_start: 1150
+  shadow_expire_permanent: -1
+  # Real scheme observed in the directory: {CRYPT}$6$<salt>$<sha512>
+  password_scheme: "{CRYPT}"
+  # Length of the temporary passwords. On this cluster they are 8 characters, which is
+  # the length the historical ones in the directory have.
+  password_length: 8
+  send_mail: ask            # ask | always | never
+
+  # --- expiry policy ------------------------------------------------------
+  # What is applied when the operator does NOT ask for a date while creating or
+  # reactivating. "nunca" leaves the account permanent, which is what the inherited
+  # flow did. Durations are accepted too: "1a", "18m", "90d".
+  expire_default: "nunca"
+  # What `--expires fin-de-anio` means: the next time this MM-DD comes around.
+  # "01-01" = the account survives the turn of the year; "12-31" = it ends before.
+  year_end: "01-01"
+  # How an account WITHOUT expiry is marked at creation:
+  #   "explicito" / "explicit" -> shadowExpire: -1  (like the 136 active ones)
+  #   "ausente"   / "absent"   -> it is not written  (what add_users.sh did)
+  # On reactivation -1 is always written, because the previous date has to be erased.
+  permanent_marker: "explicito"
+
+slurm:
+  enabled: true
+  # In the real flow, the user's default account IS their group:
+  #   sacctmgr -i create user name=<uid> DefaultAccount=<group>
+  fallback_account: "hpc-default"
+  capture_associations: true   # backs the associations up before removing them
+
+hooks:
+  # They are run with .format(**ctx). Available context: username, uid, gid,
+  # group, mail, password_file, home. Empty = no hook.
+  #
+  # When somebody is created, their Nextcloud space is prepared: ACL for the `apache`
+  # user and two personal mounts (their BeeGFS home and their lab folder). It requires
+  # the tool to run **where Nextcloud lives**.
+  after_create:
+    - "/root/kutral-control-center/scripts/nextcloud_user.sh {username} {group} {home}"
+  after_delete: []
+
+# Networks where the tool must NEVER operate if environment != prod.
+# It prevents a rehearsal config from pointing at the real cluster by accident.
+guard_networks:
+  - "192.0.2.0/24"

@@ -1,0 +1,14 @@
+# Kutral Control Center — runtime dependencies
+#
+# The cluster runs Python 3.9 (AlmaLinux 9.5), which is the target version.
+#   python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
+
+ldap3>=2.9.1          # LDAP engine (replaces ldapsearch/ldapmodify through subprocess)
+PyYAML>=6.0           # config.yaml
+
+# Excel export of the report. No pandas: the report is three flat sheets and they are
+# written with openpyxl directly (pandas would be 40 MB that are never used)
+openpyxl>=3.1
+
+# Development and tests only (not needed on the cluster)
+pytest>=7.4

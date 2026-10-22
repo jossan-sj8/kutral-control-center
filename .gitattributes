@@ -1,0 +1,12 @@
+# Los finales de línea importan en los scripts de shell: un `\r` al final del shebang
+# hace que Linux busque un intérprete llamado `/bin/bash<CR>` y falle con
+# "intérprete erróneo" — un mensaje que no dice nada del motivo real.
+# Pasó con `scripts/ldap-backup.sh` el 2026-10-14, copiado desde Windows con scp.
+*.sh text eol=lf
+
+# Los archivos de Python y la documentación toleran CRLF, pero se normalizan igual.
+*.py text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf

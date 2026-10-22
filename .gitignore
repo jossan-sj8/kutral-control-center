@@ -1,0 +1,38 @@
+# Kutral Control Center — what does NOT go into the repository
+#
+# `config.yaml` is local: it is created by copying `config.example.yaml`, which IS
+# versioned so that the available keys are visible.
+
+# --- Local configuration ---
+config.yaml
+
+# --- Python environments and artefacts ---
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Local runtime data (they regenerate by themselves) ---
+sandbox/
+outbox/
+logs/
+backups/
+
+# --- Secrets: never ---
+secrets/
+.env
+.kutral_ldap_pass
+*.pem
+
+# --- Word temporaries ---
+# The tutorial is edited in Word, and with the document open Word leaves these files next
+# to it: a 162-byte lock (`~$name.docx`) and a `.tmp` of almost a megabyte. They slipped
+# into the repository and into the cluster on 2026-10-15, because they were in the folder
+# at copy time.
+~$*
+~WRL*.tmp
+
+# --- Recycle bin and Office temporaries in general ---
+*.tmp
+~*.docx
+~*.xlsx

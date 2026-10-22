@@ -1,0 +1,71 @@
+# ============================================================================
+# Kutral Control Center — LABORATORY (rehearsal) configuration
+# ============================================================================
+# To walk through any flow **without touching the cluster**: the LDAP directory is
+# synthetic and in memory, storage is an on-disk sandbox, Slurm is a dictionary and
+# mail is written as .eml files.
+#
+# It must NEVER point at 192.0.2.0/24: the network guard in config.py aborts if
+# environment != prod and the target is on that network.
+#
+#   python3 kutral_mgr.py --config config.lab.yaml status
+
+environment: lab
+
+ldap:
+  server: "ldap://10.20.0.10"
+  base_dn: "ou=People,<SUFIJO_DEL_DIRECTORIO>"
+  group_dn: "ou=Group,<SUFIJO_DEL_DIRECTORIO>"
+  root_dn: "<SUFIJO_DEL_DIRECTORIO>"
+  manager_dn: "<CUENTA_ADMINISTRADORA>,<SUFIJO_DEL_DIRECTORIO>"
+  password_file: "secrets/ldap.lab.pass"
+  password_env: "KUTRAL_LDAP_PASSWORD"
+  timeout: 10
+
+paths:
+  scripts_dir: "sandbox/scripts/AddUsers"
+  beegfs_home: "sandbox/mnt/beegfs/home"
+  beegfs_labs: "sandbox/mnt/beegfs/labs"
+  beegfs_history: "sandbox/mnt/beegfs/backup/history"
+  logs_dir: "logs"
+  backups_dir: "sandbox/backups"
+  tutorial_pdf: "docs/Tutorial_basico_uso_cluster.pdf"
+  mail_dir: "sandbox/mail"
+
+smtp:
+  # `file` writes the mails as .eml into paths.mail_dir: it is the offline rehearsal
+  # transport, because it depends on no server. With a MailHog at hand it can be
+  # switched to `smtp` pointing at its port (1025 by default).
+  transport: file
+  sender: "hpc@ejemplo.cl"
+  server: "localhost"
+  port: 1025
+
+cluster:
+  name: "Kutral HPC (LAB)"
+  login_host: "10.20.0.20"
+  web_url: "http://10.20.0.20/"
+  wiki_url: "http://10.20.0.20/mediawiki"
+  default_shell: "/bin/bash"
+  nologin_shell: "/sbin/nologin"
+  gid_start: 9000
+  uid_start: 1150
+  shadow_expire_permanent: -1
+  password_scheme: "{CRYPT}"
+  password_length: 8
+  send_mail: always
+  expire_default: "nunca"
+  year_end: "01-01"
+  permanent_marker: "explicito"
+
+slurm:
+  enabled: true
+  fallback_account: "hpc-default"
+  capture_associations: true
+
+hooks:
+  after_create: []
+  after_delete: []
+
+guard_networks:
+  - "192.0.2.0/24"
